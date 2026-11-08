@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>الحضور والانصراف</title>
+<meta name="theme-color" content="#1d6fae">
+<meta name="description" content="تسجيل الحضور والانصراف — شركة نقاء السلسبيل">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="الحضور">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f4f6f5; --card:#ffffff; --ink:#16231f; --muted:#5f6f6a; --line:#dde4e1;
+    --pri:#1d6fae; --pri-ink:#ffffff; --pri-soft:#e6f1fa;
+    --out:#9a4b12; --out-soft:#fbeee3;
+    --ok:#1d7a3e; --ok-soft:#e5f4ea; --bad:#b3261e; --bad-soft:#fbe9e8; --warn:#8a6100; --warn-soft:#fdf3d8;
+    --r:14px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0f1513; --card:#17201d; --ink:#e7eeeb; --muted:#9aaba5; --line:#26332f;
+      --pri:#5aaee6; --pri-ink:#071522; --pri-soft:#122a3d;
+      --out:#e39a5f; --out-soft:#33220f;
+      --ok:#5cc983; --ok-soft:#12291a; --bad:#f08a83; --bad-soft:#341614; --warn:#e2b84e; --warn-soft:#2f260c;
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans Arabic",system-ui,sans-serif;font-size:16px;line-height:1.55}
+  .wrap{max-width:560px;margin:0 auto;padding:calc(16px + env(safe-area-inset-top)) 16px calc(48px + env(safe-area-inset-bottom))}
+  .wrap.wide{max-width:980px}
+  header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 16px}
+  .brand{font-weight:700;font-size:15px;color:var(--muted)}
+  h1{font-size:22px;margin:0 0 4px}
+  h2{font-size:17px;margin:0 0 12px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:14px}
+  label{display:block;font-size:14px;color:var(--muted);margin:10px 0 6px}
+  input,select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 12px}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--pri);outline-offset:1px}
+  button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:11px 16px;font-weight:600}
+  .btn{background:var(--pri);color:var(--pri-ink)}
+  .btn.ghost{background:transparent;color:var(--pri);border:1px solid var(--line)}
+  .btn.danger{background:transparent;color:var(--bad);border:1px solid var(--line)}
+  .btn.sm{padding:6px 10px;font-size:14px}
+  .btn[disabled]{opacity:.55;cursor:wait}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .row>*{flex:1 1 140px}
+  .link{background:none;color:var(--muted);text-decoration:underline;padding:6px;font-weight:500}
+  .hidden{display:none!important}
+  .msg{border-radius:10px;padding:12px 14px;margin:12px 0 0;font-size:15px}
+  .msg.ok{background:var(--ok-soft);color:var(--ok)}
+  .msg.bad{background:var(--bad-soft);color:var(--bad)}
+  .msg.info{background:var(--pri-soft);color:var(--pri)}
+  .clock{font-size:44px;font-weight:700;letter-spacing:1px;text-align:center;font-variant-numeric:tabular-nums;margin:6px 0 0}
+  .date{text-align:center;color:var(--muted);margin-bottom:6px}
+  .status{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
+  .stat{background:var(--bg);border-radius:10px;padding:10px 12px;text-align:center}
+  .stat b{display:block;font-size:22px;font-variant-numeric:tabular-nums}
+  .stat span{font-size:13px;color:var(--muted)}
+  .punch{width:100%;font-size:22px;padding:22px;border-radius:16px}
+  .punch.in{background:var(--pri);color:var(--pri-ink)}
+  .punch.out{background:var(--out);color:#fff}
+  .punch.done{background:var(--line);color:var(--muted);cursor:default}
+  .tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:14px;padding-bottom:2px}
+  .tabs button{background:var(--card);color:var(--muted);border:1px solid var(--line);white-space:nowrap}
+  .tabs button.on{background:var(--pri);color:var(--pri-ink);border-color:var(--pri)}
+  .tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
+  th,td{padding:9px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+  th{background:var(--bg);color:var(--muted);font-weight:600;font-size:13px}
+  tr:last-child td{border-bottom:0}
+  tr.click{cursor:pointer}
+  tr.click:hover td{background:var(--pri-soft)}
+  .pos{color:var(--ok);font-weight:600}
+  .neg{color:var(--bad);font-weight:600}
+  .tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:99px;background:var(--bg);color:var(--muted)}
+  .tag.man{background:var(--warn-soft);color:var(--warn)}
+  .tag.rest{background:var(--pri-soft);color:var(--pri)}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:12px}
+  .hint{font-size:13px;color:var(--muted);margin:8px 0 0}
+  .spin{display:inline-block;width:16px;height:16px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:sp 0.8s linear infinite;vertical-align:-3px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .install{display:flex;gap:12px;align-items:center;border-color:var(--pri)}
+  .install img{width:44px;height:44px;border-radius:10px;flex:0 0 auto}
+  .install b{display:block}
+  .install .hint{margin:2px 0 0}
+</style>
+</head>
+<body>
+
+<!-- ====================== دخول الموظف ====================== -->
+<div id="vLogin" class="wrap">
+  <header class="top"><span class="brand" data-company></span></header>
+  <div class="card">
+    <h1>تسجيل الحضور والانصراف</h1>
+    <label for="lId">الرقم الوظيفي</label>
+    <input id="lId" inputmode="numeric" autocomplete="username">
+    <label for="lPin">الرمز السري</label>
+    <input id="lPin" type="password" inputmode="numeric" autocomplete="current-password">
+    <label style="display:flex;gap:8px;align-items:center;margin-top:12px"><input id="lRem" type="checkbox" style="width:auto" checked> تذكرني على هذا الجهاز</label>
+    <button id="lBtn" class="btn" style="width:100%;margin-top:14px">دخول</button>
+    <div id="lMsg"></div>
+  </div>
+  <div id="installCard" class="card install hidden">
+    <img src="icon-192.png" alt="">
+    <div style="flex:1">
+      <b>ثبّت التطبيق على جوالك</b>
+      <p id="installHint" class="hint">يفتح بضغطة واحدة من الشاشة الرئيسية.</p>
+    </div>
+    <button id="installBtn" class="btn sm hidden">تثبيت</button>
+  </div>
+  <div style="text-align:center"><button class="link" onclick="show('vAdminLogin')">دخول المدير</button></div>
+</div>
+
+<!-- ====================== شاشة الموظف ====================== -->
+<div id="vEmp" class="wrap hidden">
+  <header class="top">
+    <span class="brand" data-company></span>
+    <button class="link" onclick="logout()">خروج</button>
+  </header>
+  <div class="card">
+    <h1 id="eName"></h1>
+    <div id="eSite" class="hint" style="margin:0"></div>
+    <div id="eClock" class="clock">--:--</div>
+    <div id="eDate" class="date"></div>
+    <div class="status">
+      <div class="stat"><b id="eIn">—</b><span>الحضور</span></div>
+      <div class="stat"><b id="eOut">—</b><span>الانصراف</span></div>
+      <div class="stat"><b id="eLate">—</b><span>التأخير</span></div>
+      <div class="stat"><b id="eOt">—</b><span>الإضافي</span></div>
+    </div>
+    <button id="ePunch" class="punch in">تسجيل حضور</button>
+    <div id="eMsg"></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+      <h2 style="margin:0">سجلّي الشهري</h2>
+      <input id="eMonth" type="month" style="width:auto">
+    </div>
+    <div id="eMonthBody" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<!-- ====================== دخول المدير ====================== -->
+<div id="vAdminLogin" class="wrap hidden">
+  <header class="top"><span class="brand" data-company></span></header>
+  <div class="card">
+    <h1>لوحة المدير</h1>
+    <label for="aPass">كلمة المرور</label>
+    <input id="aPass" type="password" autocomplete="current-password">
+    <button id="aBtn" class="btn" style="width:100%;margin-top:14px">دخول</button>
+    <div id="aMsg"></div>
+  </div>
+  <div style="text-align:center"><button class="link" onclick="show('vLogin')">رجوع لشاشة الموظف</button></div>
+</div>
+
+<!-- ====================== لوحة المدير ====================== -->
+<div id="vAdmin" class="wrap wide hidden">
+  <header class="top">
+    <div><span class="brand" data-company></span><h1>لوحة المدير</h1></div>
+    <button class="link" onclick="adminLogout()">خروج</button>
+  </header>
+  <nav class="tabs">
+    <button data-tab="tDay" class="on">الحضور اليومي</button>
+    <button data-tab="tManual">تسجيل يدوي</button>
+    <button data-tab="tMonth">التقرير الشهري</button>
+    <button data-tab="tSites">المواقع</button>
+    <button data-tab="tDevices">الأجهزة</button>
+  </nav>
+
+  <!-- اليومي -->
+  <section id="tDay">
+    <div class="card">
+      <div class="row" style="align-items:end">
+        <div><label for="dDate">التاريخ</label><input id="dDate" type="date"></div>
+        <div style="flex:0 0 auto"><button class="btn ghost" onclick="loadDay()">تحديث</button></div>
+      </div>
+      <div id="dKpis" class="kpis" style="margin-top:14px"></div>
+      <div id="dBody"></div>
+      <p class="hint">اضغط على أي صف لتعديله يدوياً.</p>
+    </div>
+  </section>
+
+  <!-- اليدوي -->
+  <section id="tManual" class="hidden">
+    <div class="card">
+      <h2 id="mTitle">تسجيل حضور / انصراف يدوي</h2>
+      <label for="mEmp">الموظف</label>
+      <select id="mEmp"></select>
+      <div class="row">
+        <div><label for="mDate">التاريخ</label><input id="mDate" type="date"></div>
+        <div><label for="mSite">الموقع</label><select id="mSite"></select></div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="mIn">وقت الحضور</label><input id="mIn" type="time">
+          <button class="btn ghost sm" style="margin-top:6px" onclick="setNow('mIn')">الآن</button>
+        </div>
+        <div>
+          <label for="mOut">وقت الانصراف</label><input id="mOut" type="time">
+          <button class="btn ghost sm" style="margin-top:6px" onclick="setNow('mOut')">الآن</button>
+        </div>
+      </div>
+      <label for="mNote">ملاحظة (سبب التسجيل اليدوي)</label>
+      <input id="mNote" placeholder="مثال: عطل في جوال الموظف">
+      <div class="row" style="margin-top:16px">
+        <button id="mSave" class="btn">حفظ</button>
+        <button id="mDel" class="btn danger hidden">حذف السجل</button>
+        <button class="btn ghost" onclick="resetManual()">جديد</button>
+      </div>
+      <div id="mMsg"></div>
+      <p class="hint">إذا كان للموظف سجل في نفس التاريخ سيتم تعديله. اترك وقت الانصراف فارغاً لتسجيل الحضور فقط.</p>
+    </div>
+  </section>
+
+  <!-- الشهري -->
+  <section id="tMonth" class="hidden">
+    <div class="card">
+      <div class="row" style="align-items:end">
+        <div><label for="rMonth">الشهر</label><input id="rMonth" type="month"></div>
+        <div style="flex:0 0 auto" class="row">
+          <button class="btn ghost" onclick="loadMonth()">عرض</button>
+          <button class="btn" onclick="exportCsv()">تصدير Excel</button>
+        </div>
+      </div>
+      <div id="rBody" style="margin-top:14px"></div>
+      <p class="hint">الفرق = الإضافي − التأخير − الانصراف المبكر. اضغط على اسم الموظف لعرض تفاصيله.</p>
+    </div>
+    <div id="rDetailCard" class="card hidden">
+      <h2 id="rDetailTitle"></h2>
+      <div id="rDetail"></div>
+    </div>
+  </section>
+
+  <!-- المواقع -->
+  <section id="tSites" class="hidden">
+    <div class="card">
+      <h2>مواقع العمل</h2>
+      <div id="sBody"></div>
+      <p class="hint">لتحديد موقع بدقة: قف داخل الموقع واضغط "تعيين موقعي الحالي". مواعيد الدوام وأيام الراحة والموظفين تُعدَّل من ملف Google Sheet.</p>
+      <div id="sMsg"></div>
+    </div>
+  </section>
+
+  <!-- الأجهزة -->
+  <section id="tDevices" class="hidden">
+    <div class="card">
+      <h2>أجهزة الموظفين</h2>
+      <div id="vBody"></div>
+      <p class="hint">كل حساب يرتبط بأول جهاز يدخل منه الموظف، ولا يعمل من جهاز آخر، ولا يمكن تسجيل أكثر من موظف من نفس الجهاز. إذا غيّر الموظف جواله أو مسح بيانات المتصفح اضغط "إعادة تعيين" ثم يدخل من الجهاز الجديد.</p>
+      <div id="vMsg"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+/* ===================== الإعداد ===================== */
+// إذا استضفت هذه الصفحة خارج Google (Netlify / GitHub Pages) ضع رابط الـ Web App هنا:
+const MANUAL_API_URL = 'https://script.google.com/macros/s/AKfycbzJNXMtNh6QL7MvgwVM7oiJnn7HCxISw4qSrd_qPOwvu2E5ulU45XwP-tZ1OOK9wL8ISA/exec';
+const SERVED_URL = '';
+const API_URL = SERVED_URL || MANUAL_API_URL;
+const TZ = 'Asia/Riyadh';
+
+/* ===================== أدوات عامة ===================== */
+const $ = id => document.getElementById(id);
+const store = {
+  get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+  set(k,v){ try { localStorage.setItem(k,v); } catch(e){} },
+  del(k){ try { localStorage.removeItem(k); } catch(e){} }
+};
+const sess = {
+  get(k){ try { return sessionStorage.getItem(k); } catch(e){ return null; } },
+  set(k,v){ try { sessionStorage.setItem(k,v); } catch(e){} },
+  del(k){ try { sessionStorage.removeItem(k); } catch(e){} }
+};
+
+function api(action, data){
+  const body = Object.assign({ action }, data || {});
+  let p;
+  if (window.google && google.script && google.script.run) {
+    p = new Promise((res, rej) => google.script.run
+      .withSuccessHandler(s => res(JSON.parse(s)))
+      .withFailureHandler(e => rej(e))
+      .apiCall(JSON.stringify(body)));
+  } else {
+    if (!API_URL) return Promise.reject(new Error('لم يتم ضبط رابط الخادم (MANUAL_API_URL)'));
+    p = fetch(API_URL, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
+      .then(r => r.json());
+  }
+  return p.then(r => { if (!r.ok) throw new Error(r.error || 'حدث خطأ'); return r; },
+                e => { throw new Error((e && e.message) && !/Failed to fetch|NetworkError/.test(e.message) ? e.message : 'تعذّر الاتصال. تحقق من الإنترنت وحاول مرة أخرى.'); });
+}
+
+function msg(el, text, kind){ $(el).innerHTML = text ? `<div class="msg ${kind||'info'}">${esc(text)}</div>` : ''; }
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function busy(btn, on, label){
+  const b = $(btn);
+  if (on) { b.dataset.label = b.textContent; b.innerHTML = '<span class="spin"></span>'; b.disabled = true; }
+  else { b.textContent = label || b.dataset.label || b.textContent; b.disabled = false; }
+}
+function show(id){ ['vLogin','vEmp','vAdminLogin','vAdmin'].forEach(v => $(v).classList.toggle('hidden', v !== id)); window.scrollTo(0,0); }
+function setCompany(name){ if (!name) return; document.querySelectorAll('[data-company]').forEach(e => e.textContent = name); store.set('company', name); }
+
+/** دقائق → س:د */
+function hm(m){
+  if (m === null || m === undefined || m === '') return '—';
+  m = Number(m); const sign = m < 0 ? '-' : ''; m = Math.abs(m);
+  return sign + Math.floor(m/60) + ':' + String(m%60).padStart(2,'0');
+}
+function signed(m){
+  if (m === null || m === undefined || m === '') return '—';
+  const cls = m > 0 ? 'pos' : m < 0 ? 'neg' : '';
+  return `<span class="${cls}">${m > 0 ? '+' : ''}${hm(m)}</span>`;
+}
+function riyadhNow(){
+  const p = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false }).formatToParts(new Date());
+  const g = t => p.find(x => x.type === t).value;
+  return { date: `${g('year')}-${g('month')}-${g('day')}`, time: `${g('hour')}:${g('minute')}`, sec: g('second') };
+}
+function arDate(d){
+  const [y,m,dd] = d.split('-').map(Number);
+  return new Date(Date.UTC(y,m-1,dd,12)).toLocaleDateString('ar-SA-u-ca-gregory', { weekday:'long', day:'numeric', month:'long', year:'numeric', timeZone:'UTC' });
+}
+function arDay(d){
+  const [y,m,dd] = d.split('-').map(Number);
+  return new Date(Date.UTC(y,m-1,dd,12)).toLocaleDateString('ar-SA-u-ca-gregory', { weekday:'short', day:'numeric', month:'numeric', timeZone:'UTC' });
+}
+
+function getPos(){
+  return new Promise((res, rej) => {
+    if (!navigator.geolocation) return rej(new Error('هذا الجهاز أو المتصفح لا يدعم تحديد الموقع.'));
+    navigator.geolocation.getCurrentPosition(p => res(p.coords), e => {
+      const m = { 1:'تم رفض إذن الموقع. اسمح للمتصفح بالوصول إلى الموقع من الإعدادات ثم حاول مرة أخرى.',
+                  2:'تعذّر تحديد موقعك. تأكد من تشغيل GPS.', 3:'انتهت مهلة تحديد الموقع. حاول مرة أخرى في مكان مفتوح.' };
+      rej(new Error(m[e.code] || 'تعذّر تحديد الموقع.'));
+    }, { enableHighAccuracy:true, timeout:20000, maximumAge:0 });
+  });
+}
+
+/* ===================== الموظف ===================== */
+let EMP = null; // {id, pin, data}
+
+/** معرّف ثابت لهذا الجهاز/المتصفح يُستخدم لربط الحساب بجهاز واحد */
+function deviceId(){
+  let d = store.get('devId');
+  if (!d || !/^[A-Za-z0-9-]{16,64}$/.test(d)) {
+    const a = new Uint8Array(16);
+    (window.crypto || {}).getRandomValues ? crypto.getRandomValues(a) : a.forEach((_, i) => a[i] = Math.random() * 256 | 0);
+    d = 'd-' + Array.from(a, b => b.toString(16).padStart(2, '0')).join('');
+    store.set('devId', d);
+  }
+  return d;
+}
+
+function creds(){ return { empId: EMP.id, pin: EMP.pin, deviceId: deviceId() }; }
+
+$('lBtn').onclick = async () => {
+  const id = $('lId').value.trim(), pin = $('lPin').value.trim();
+  if (!id || !pin) return msg('lMsg', 'أدخل الرقم الوظيفي والرمز السري', 'bad');
+  busy('lBtn', true); msg('lMsg', '');
+  try {
+    const r = await api('login', { empId:id, pin, deviceId: deviceId() });
+    EMP = { id, pin, data:r };
+    if ($('lRem').checked) store.set('emp', JSON.stringify({ id, pin })); else store.del('emp');
+    openEmp(r);
+  } catch(e) { msg('lMsg', e.message, 'bad'); }
+  busy('lBtn', false);
+};
+$('lPin').addEventListener('keydown', e => { if (e.key === 'Enter') $('lBtn').click(); });
+
+function openEmp(r){
+  setCompany(r.company);
+  $('eName').textContent = r.emp.name;
+  $('eSite').textContent = r.sites.map(s => `${s.name} · الدوام ${s.start} – ${s.end}`).join('  |  ');
+  $('eDate').textContent = arDate(r.date);
+  $('eMonth').value = r.date.slice(0,7);
+  renderToday(r.today);
+  show('vEmp');
+  loadMyMonth();
+}
+
+function renderToday(t){
+  $('eIn').textContent = t && t.in ? t.in : '—';
+  $('eOut').textContent = t && t.out ? t.out : '—';
+  $('eLate').textContent = t && t.in ? hm(t.late) : '—';
+  $('eOt').textContent = t && t.out ? hm(t.ot) : '—';
+  const b = $('ePunch');
+  b.className = 'punch'; b.disabled = false;
+  if (!t || !t.in) { b.classList.add('in'); b.textContent = 'تسجيل حضور'; b.dataset.type = 'in'; }
+  else if (!t.out) { b.classList.add('out'); b.textContent = 'تسجيل انصراف'; b.dataset.type = 'out'; }
+  else { b.classList.add('done'); b.textContent = 'تم تسجيل اليوم ✓'; b.dataset.type = ''; b.disabled = true; }
+}
+
+$('ePunch').onclick = async () => {
+  const type = $('ePunch').dataset.type;
+  if (!type) return;
+  if (type === 'out' && !confirm('تأكيد تسجيل الانصراف الآن؟')) return;
+  busy('ePunch', true); msg('eMsg', 'جاري تحديد موقعك…', 'info');
+  try {
+    const c = await getPos();
+    msg('eMsg', 'جاري التسجيل…', 'info');
+    const r = await api('punch', Object.assign(creds(), { type, lat:c.latitude, lng:c.longitude, acc:c.accuracy }));
+    busy('ePunch', false);
+    renderToday(r.today);
+    msg('eMsg', `تم تسجيل ${type === 'in' ? 'الحضور' : 'الانصراف'} الساعة ${r.time} — ${r.site} (على بعد ${r.distance} م)`, 'ok');
+    loadMyMonth();
+  } catch(e) {
+    busy('ePunch', false);
+    msg('eMsg', e.message, 'bad');
+  }
+};
+
+$('eMonth').onchange = loadMyMonth;
+async function loadMyMonth(){
+  $('eMonthBody').innerHTML = '<span class="spin"></span>';
+  try {
+    const r = await api('myMonth', Object.assign(creds(), { month: $('eMonth').value }));
+    const s = r.summary;
+    let h = `<div class="kpis">
+      <div class="stat"><b>${s.days}</b><span>أيام الحضور</span></div>
+      <div class="stat"><b>${hm(s.worked)}</b><span>ساعات العمل</span></div>
+      <div class="stat"><b>${hm(s.late)}</b><span>التأخير</span></div>
+      <div class="stat"><b>${hm(s.ot)}</b><span>الإضافي</span></div>
+      <div class="stat"><b>${signed(s.diff)}</b><span>الفرق</span></div></div>`;
+    if (!r.records.length) h += '<p class="hint">لا توجد سجلات في هذا الشهر.</p>';
+    else h += `<div class="tbl"><table><thead><tr><th>اليوم</th><th>حضور</th><th>انصراف</th><th>تأخير</th><th>إضافي</th><th>الفرق</th></tr></thead><tbody>` +
+      r.records.map(x => `<tr><td>${arDay(x.date)}</td><td>${esc(x.in)||'—'}</td><td>${esc(x.out)||'—'}</td><td>${hm(x.late)}</td><td>${hm(x.ot)}</td><td>${signed(x.diff)}</td></tr>`).join('') +
+      '</tbody></table></div>';
+    $('eMonthBody').innerHTML = h;
+  } catch(e) { $('eMonthBody').innerHTML = `<div class="msg bad">${esc(e.message)}</div>`; }
+}
+
+function logout(){ EMP = null; store.del('emp'); $('lPin').value = ''; msg('eMsg',''); show('vLogin'); }
+
+setInterval(() => {
+  if ($('vEmp').classList.contains('hidden')) return;
+  const n = riyadhNow(); $('eClock').textContent = n.time + ':' + n.sec;
+}, 1000);
+
+/* ===================== المدير ===================== */
+let ADMIN = null; // {pass, data}
+const adm = d => Object.assign({ adminPass: ADMIN.pass }, d || {});
+
+$('aBtn').onclick = async () => {
+  const pass = $('aPass').value;
+  if (!pass) return msg('aMsg', 'أدخل كلمة المرور', 'bad');
+  busy('aBtn', true); msg('aMsg','');
+  try {
+    const r = await api('adminLogin', { adminPass: pass });
+    ADMIN = { pass, data: r };
+    sess.set('adm', pass);
+    openAdmin(r);
+  } catch(e) { msg('aMsg', e.message, 'bad'); }
+  busy('aBtn', false);
+};
+$('aPass').addEventListener('keydown', e => { if (e.key === 'Enter') $('aBtn').click(); });
+
+function adminLogout(){ ADMIN = null; sess.del('adm'); $('aPass').value = ''; show('vLogin'); }
+
+function openAdmin(r){
+  setCompany(r.company);
+  $('dDate').value = r.date; $('mDate').value = r.date; $('rMonth').value = r.date.slice(0,7);
+  $('mEmp').innerHTML = r.employees.map(e => `<option value="${esc(e.id)}">${esc(e.name)} (${esc(e.id)})${e.active ? '' : ' — غير نشط'}</option>`).join('');
+  $('mSite').innerHTML = '<option value="">الموقع الافتراضي للموظف</option>' + r.sites.map(s => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('');
+  renderSites();
+  show('vAdmin');
+  tab('tDay');
+}
+
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => tab(b.dataset.tab));
+function tab(id){
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === id));
+  ['tDay','tManual','tMonth','tSites','tDevices'].forEach(t => $(t).classList.toggle('hidden', t !== id));
+  if (id === 'tDay') loadDay();
+  if (id === 'tMonth') loadMonth();
+  if (id === 'tDevices') loadDevices();
+}
+
+const methodTag = m => m ? `<span class="tag ${m === 'يدوي' ? 'man' : ''}">${esc(m)}</span>` : '';
+
+let DAY = null;
+$('dDate').onchange = loadDay;
+async function loadDay(){
+  $('dBody').innerHTML = '<span class="spin"></span>'; $('dKpis').innerHTML = '';
+  try {
+    const r = await api('adminDay', adm({ date: $('dDate').value }));
+    DAY = r;
+    const late = r.records.filter(x => x.late > 0).length;
+    const absent = r.absent.filter(a => !a.rest).length;
+    $('dKpis').innerHTML = `
+      <div class="stat"><b>${r.records.length}</b><span>حاضر</span></div>
+      <div class="stat"><b>${late}</b><span>متأخر</span></div>
+      <div class="stat"><b>${r.records.filter(x => x.in && !x.out).length}</b><span>لم ينصرف</span></div>
+      <div class="stat"><b>${absent}</b><span>غائب</span></div>`;
+    let rows = r.records.map((x,i) => `<tr class="click" data-i="${i}">
+        <td>${esc(x.name)}</td><td>${esc(x.siteName)}</td>
+        <td>${esc(x.in)||'—'} ${methodTag(x.inMethod)}</td><td>${esc(x.out)||'—'} ${methodTag(x.outMethod)}</td>
+        <td>${hm(x.late)}</td><td>${hm(x.early)}</td><td>${hm(x.worked)}</td><td>${hm(x.ot)}</td><td>${signed(x.diff)}</td>
+        <td>${esc(x.note)}</td></tr>`).join('');
+    rows += r.absent.map(a => `<tr class="click" data-absent="${esc(a.id)}"><td>${esc(a.name)}</td><td colspan="9">${a.rest ? '<span class="tag rest">يوم راحة</span>' : '<span class="neg">لم يسجّل حضور</span>'}</td></tr>`).join('');
+    $('dBody').innerHTML = (rows ? `<div class="tbl"><table><thead><tr><th>الموظف</th><th>الموقع</th><th>الحضور</th><th>الانصراف</th><th>التأخير</th><th>مبكر</th><th>مدة العمل</th><th>الإضافي</th><th>الفرق</th><th>ملاحظة</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="hint">لا يوجد موظفون.</p>');
+    $('dBody').querySelectorAll('tr.click').forEach(tr => tr.onclick = () => {
+      if (tr.dataset.absent) editRecord({ empId: tr.dataset.absent, date: r.date });
+      else editRecord(r.records[+tr.dataset.i]);
+    });
+  } catch(e) { $('dBody').innerHTML = `<div class="msg bad">${esc(e.message)}</div>`; }
+}
+
+/* ---------- اليدوي ---------- */
+let EDITING = false;
+function editRecord(x){
+  tab('tManual');
+  $('mEmp').value = x.empId; $('mDate').value = x.date;
+  $('mSite').value = x.siteId || '';
+  $('mIn').value = x.in || ''; $('mOut').value = x.out || ''; $('mNote').value = x.note || '';
+  EDITING = !!x.in;
+  $('mTitle').textContent = EDITING ? 'تعديل سجل' : 'تسجيل حضور / انصراف يدوي';
+  $('mDel').classList.toggle('hidden', !EDITING);
+  msg('mMsg','');
+}
+function resetManual(){
+  $('mDate').value = riyadhNow().date; $('mIn').value = ''; $('mOut').value = ''; $('mNote').value = ''; $('mSite').value = '';
+  EDITING = false; $('mTitle').textContent = 'تسجيل حضور / انصراف يدوي'; $('mDel').classList.add('hidden'); msg('mMsg','');
+}
+function setNow(id){ $(id).value = riyadhNow().time; }
+
+$('mSave').onclick = async () => {
+  if (!$('mIn').value) return msg('mMsg', 'أدخل وقت الحضور', 'bad');
+  busy('mSave', true);
+  try {
+    const r = await api('adminSave', adm({ empId: $('mEmp').value, date: $('mDate').value, siteId: $('mSite').value,
+      inTime: $('mIn').value, outTime: $('mOut').value, note: $('mNote').value }));
+    const x = r.record;
+    msg('mMsg', `تم الحفظ: ${x.name} — ${x.date} — حضور ${x.in}${x.out ? ' / انصراف ' + x.out : ''} — تأخير ${hm(x.late)}${x.out ? ' — إضافي ' + hm(x.ot) : ''}`, 'ok');
+    EDITING = true; $('mDel').classList.remove('hidden'); $('mTitle').textContent = 'تعديل سجل';
+  } catch(e) { msg('mMsg', e.message, 'bad'); }
+  busy('mSave', false);
+};
+
+$('mDel').onclick = async () => {
+  const name = $('mEmp').selectedOptions[0].textContent;
+  if (!confirm(`حذف سجل ${name} بتاريخ ${$('mDate').value}؟`)) return;
+  busy('mDel', true);
+  try {
+    await api('adminDelete', adm({ empId: $('mEmp').value, date: $('mDate').value }));
+    busy('mDel', false); resetManual(); msg('mMsg', 'تم حذف السجل', 'ok');
+  } catch(e) { busy('mDel', false); msg('mMsg', e.message, 'bad'); }
+};
+
+/* ---------- الشهري ---------- */
+let MONTH = null;
+$('rMonth').onchange = loadMonth;
+async function loadMonth(){
+  $('rBody').innerHTML = '<span class="spin"></span>'; $('rDetailCard').classList.add('hidden');
+  try {
+    const r = await api('adminMonth', adm({ month: $('rMonth').value }));
+    MONTH = r;
+    const t = r.summary.reduce((a,s) => { ['days','worked','late','early','ot','diff'].forEach(k => a[k] += s[k]); return a; }, {days:0,worked:0,late:0,early:0,ot:0,diff:0});
+    const rows = r.summary.map((s,i) => `<tr class="click" data-i="${i}">
+      <td>${esc(s.name)}</td><td>${s.days}</td><td>${hm(s.worked)}</td><td>${hm(s.late)} <span class="tag">${s.lateDays} يوم</span></td>
+      <td>${hm(s.early)}</td><td>${hm(s.ot)}</td><td>${signed(s.diff)}</td><td>${s.incomplete ? `<span class="tag man">${s.incomplete}</span>` : '—'}</td></tr>`).join('');
+    $('rBody').innerHTML = `<div class="tbl"><table><thead><tr><th>الموظف</th><th>أيام الحضور</th><th>ساعات العمل</th><th>التأخير</th><th>انصراف مبكر</th><th>الإضافي</th><th>الفرق</th><th>بدون انصراف</th></tr></thead>
+      <tbody>${rows}<tr><td><b>الإجمالي</b></td><td><b>${t.days}</b></td><td><b>${hm(t.worked)}</b></td><td><b>${hm(t.late)}</b></td><td><b>${hm(t.early)}</b></td><td><b>${hm(t.ot)}</b></td><td><b>${signed(t.diff)}</b></td><td></td></tr></tbody></table></div>`;
+    $('rBody').querySelectorAll('tr.click').forEach(tr => tr.onclick = () => monthDetail(r.summary[+tr.dataset.i]));
+  } catch(e) { $('rBody').innerHTML = `<div class="msg bad">${esc(e.message)}</div>`; }
+}
+
+function monthDetail(s){
+  const recs = MONTH.records.filter(x => x.empId === s.id);
+  $('rDetailTitle').textContent = `${s.name} — ${MONTH.month}`;
+  $('rDetail').innerHTML = recs.length ? `<div class="tbl"><table><thead><tr><th>اليوم</th><th>الموقع</th><th>حضور</th><th>انصراف</th><th>تأخير</th><th>مبكر</th><th>مدة العمل</th><th>إضافي</th><th>الفرق</th><th>ملاحظة</th></tr></thead><tbody>` +
+    recs.map((x,i) => `<tr class="click" data-i="${i}"><td>${arDay(x.date)}</td><td>${esc(x.siteName)}</td><td>${esc(x.in)||'—'} ${methodTag(x.inMethod)}</td><td>${esc(x.out)||'—'} ${methodTag(x.outMethod)}</td>
+      <td>${hm(x.late)}</td><td>${hm(x.early)}</td><td>${hm(x.worked)}</td><td>${hm(x.ot)}</td><td>${signed(x.diff)}</td><td>${esc(x.note)}</td></tr>`).join('') + '</tbody></table></div>'
+    : '<p class="hint">لا توجد سجلات.</p>';
+  $('rDetail').querySelectorAll('tr.click').forEach(tr => tr.onclick = () => editRecord(recs[+tr.dataset.i]));
+  $('rDetailCard').classList.remove('hidden');
+  $('rDetailCard').scrollIntoView({ behavior:'smooth' });
+}
+
+function loadXlsx(){
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload = () => window.XLSX ? res(window.XLSX) : rej(new Error('xlsx'));
+    s.onerror = () => rej(new Error('xlsx'));
+    document.head.appendChild(s);
+  });
+}
+
+function exportRows(){
+  const dash = v => (v === null || v === undefined || v === '') ? '' : v;
+  const t = MONTH.summary.reduce((a,s) => { ['days','lateDays','worked','late','early','ot','diff','incomplete'].forEach(k => a[k] += s[k]); return a; },
+    {days:0,lateDays:0,worked:0,late:0,early:0,ot:0,diff:0,incomplete:0});
+  const summary = [
+    ['الرقم الوظيفي','الموظف','أيام الحضور','أيام التأخير','ساعات العمل','التأخير','الانصراف المبكر','الإضافي','الفرق','أيام بدون انصراف']
+  ].concat(MONTH.summary.map(s => [s.id, s.name, s.days, s.lateDays, hm(s.worked), hm(s.late), hm(s.early), hm(s.ot), hm(s.diff), s.incomplete]))
+   .concat([['', 'الإجمالي', t.days, t.lateDays, hm(t.worked), hm(t.late), hm(t.early), hm(t.ot), hm(t.diff), t.incomplete]]);
+  const details = [
+    ['التاريخ','الرقم الوظيفي','الموظف','الموقع','الحضور','الانصراف','التأخير','الانصراف المبكر','مدة العمل','الإضافي','الفرق','طريقة الحضور','طريقة الانصراف','ملاحظات']
+  ].concat(MONTH.records.map(x => [x.date, x.empId, x.name, x.siteName, dash(x.in), dash(x.out),
+    x.in ? hm(x.late) : '', x.out ? hm(x.early) : '', x.out ? hm(x.worked) : '', x.out ? hm(x.ot) : '', x.out ? hm(x.diff) : '',
+    dash(x.inMethod), dash(x.outMethod), dash(x.note)]));
+  return { summary, details };
+}
+
+function saveBlob(blob, name){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+
+async function exportCsv(){
+  if (!MONTH) return;
+  const { summary, details } = exportRows();
+  const name = `الحضور-${MONTH.month}`;
+  try {
+    const X = await loadXlsx();
+    const wb = X.utils.book_new();
+    const mk = (rows, widths) => { const ws = X.utils.aoa_to_sheet(rows); ws['!cols'] = widths.map(w => ({ wch: w })); return ws; };
+    X.utils.book_append_sheet(wb, mk(summary, [12,24,11,11,11,10,14,10,10,15]), 'الملخص');
+    X.utils.book_append_sheet(wb, mk(details, [12,12,24,14,9,9,9,14,10,9,9,12,12,24]), 'التفاصيل اليومية');
+    wb.Workbook = { Views: [{ RTL: true }] };
+    const out = X.write(wb, { bookType: 'xlsx', type: 'array' });
+    saveBlob(new Blob([out], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), name + '.xlsx');
+  } catch (e) {
+    // بديل بدون إنترنت: ملف مفصول بـ Tab بترميز UTF-16 يفتحه Excel بأعمدة صحيحة في كل الإعدادات
+    const tsv = [[`ملخص شهر ${MONTH.month}`]].concat(summary, [[]], [['التفاصيل اليومية']], details)
+      .map(r => r.map(v => String(v == null ? '' : v).replace(/[\t\r\n]+/g, ' ')).join('\t')).join('\r\n');
+    const buf = new Uint8Array(2 + tsv.length * 2);
+    buf[0] = 0xFF; buf[1] = 0xFE;
+    for (let i = 0; i < tsv.length; i++) { const c = tsv.charCodeAt(i); buf[2 + i*2] = c & 255; buf[3 + i*2] = c >> 8; }
+    saveBlob(new Blob([buf], { type: 'text/csv;charset=utf-16le' }), name + '.csv');
+  }
+}
+
+/* ---------- الأجهزة ---------- */
+async function loadDevices(){
+  $('vBody').innerHTML = '<span class="spin"></span>';
+  try {
+    const r = await api('adminLogin', adm());
+    ADMIN.data = r;
+    $('vBody').innerHTML = `<div class="tbl"><table><thead><tr><th>الموظف</th><th>الجهاز</th></tr></thead><tbody>` +
+      r.employees.map((e,i) => `<tr><td>${esc(e.name)} <span class="tag">${esc(e.id)}</span>${e.active ? '' : ' <span class="tag">غير نشط</span>'}</td>
+        <td>${e.hasDevice ? `<span class="tag rest">مسجّل</span> <button class="btn ghost sm" data-i="${i}">إعادة تعيين</button>` : '<span class="tag">لم يدخل بعد</span>'}</td></tr>`).join('') +
+      '</tbody></table></div>';
+    $('vBody').querySelectorAll('button[data-i]').forEach(b => b.onclick = () => resetDevice(r.employees[+b.dataset.i], b));
+  } catch(e) { $('vBody').innerHTML = `<div class="msg bad">${esc(e.message)}</div>`; }
+}
+
+async function resetDevice(emp, btn){
+  if (!confirm(`إعادة تعيين جهاز ${emp.name}؟\nسيتمكن من الدخول من أول جهاز يستخدمه بعد ذلك.`)) return;
+  btn.disabled = true;
+  try {
+    await api('adminResetDevice', adm({ empId: emp.id }));
+    msg('vMsg', `تمت إعادة تعيين جهاز ${emp.name}`, 'ok');
+    loadDevices();
+  } catch(e) { msg('vMsg', e.message, 'bad'); btn.disabled = false; }
+}
+
+/* ---------- المواقع ---------- */
+function renderSites(){
+  const s = ADMIN.data.sites;
+  $('sBody').innerHTML = `<div class="tbl"><table><thead><tr><th>الموقع</th><th>الإحداثيات</th><th>النطاق</th><th>الدوام</th><th>السماح</th><th>الراحة</th><th></th></tr></thead><tbody>` +
+    s.map((x,i) => `<tr><td>${esc(x.name)}</td>
+      <td><a href="https://maps.google.com/?q=${x.lat},${x.lng}" target="_blank" rel="noopener">${Number(x.lat).toFixed(5)}, ${Number(x.lng).toFixed(5)}</a></td>
+      <td>${x.radius} م</td><td>${esc(x.start)} – ${esc(x.end)}</td><td>${x.grace} د</td><td>${esc(x.rest)||'—'}</td>
+      <td><button class="btn ghost sm" data-i="${i}">تعيين موقعي الحالي</button></td></tr>`).join('') + '</tbody></table></div>';
+  $('sBody').querySelectorAll('button[data-i]').forEach(b => b.onclick = () => setSiteHere(+b.dataset.i, b));
+}
+
+async function setSiteHere(i, btn){
+  const site = ADMIN.data.sites[i];
+  msg('sMsg', 'جاري تحديد موقعك…', 'info'); btn.disabled = true;
+  try {
+    const c = await getPos();
+    if (!confirm(`تعيين موقعك الحالي كموقع "${site.name}"؟\nدقة الـ GPS: ±${Math.round(c.accuracy)} م`)) { msg('sMsg',''); btn.disabled = false; return; }
+    await api('adminSetSite', adm({ siteId: site.id, lat: c.latitude, lng: c.longitude }));
+    site.lat = c.latitude; site.lng = c.longitude;
+    renderSites();
+    msg('sMsg', `تم تحديث موقع "${site.name}" (دقة ±${Math.round(c.accuracy)} م)`, 'ok');
+  } catch(e) { msg('sMsg', e.message, 'bad'); btn.disabled = false; }
+}
+
+/* ===================== التطبيق (PWA) ===================== */
+// نقل معرّف الجهاز من الرابط القديم (#dev=...) حتى لا يحتاج الموظف إعادة تعيين
+(function adoptDevice(){
+  const m = location.hash.match(/dev=([A-Za-z0-9-]{16,64})/);
+  if (m && !store.get('devId')) store.set('devId', m[1]);
+  if (m) history.replaceState(null, '', location.pathname + location.search);
+})();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+
+const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+let deferredInstall = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); deferredInstall = e;
+  if (!isStandalone()) { $('installBtn').classList.remove('hidden'); $('installCard').classList.remove('hidden'); }
+});
+window.addEventListener('appinstalled', () => { $('installCard').classList.add('hidden'); deferredInstall = null; });
+$('installBtn').onclick = async () => {
+  if (!deferredInstall) return;
+  deferredInstall.prompt();
+  await deferredInstall.userChoice.catch(() => {});
+  deferredInstall = null; $('installCard').classList.add('hidden');
+};
+(function iosHint(){
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (ios && !isStandalone()) {
+    $('installHint').textContent = 'من Safari: اضغط زر المشاركة ⬆︎ ثم "إضافة إلى الشاشة الرئيسية".';
+    $('installCard').classList.remove('hidden');
+  }
+})();
+
+/* ===================== البدء ===================== */
+(async function init(){
+  setCompany(store.get('company') || 'شركة نقاء السلسبيل');
+  const p = sess.get('adm');
+  if (p) {
+    try { const r = await api('adminLogin', { adminPass: p }); ADMIN = { pass:p, data:r }; return openAdmin(r); }
+    catch(e) { sess.del('adm'); }
+  }
+  const saved = store.get('emp');
+  if (saved) {
+    try {
+      const c = JSON.parse(saved);
+      $('lId').value = c.id; $('lPin').value = c.pin;
+      const r = await api('login', { empId:c.id, pin:c.pin, deviceId: deviceId() });
+      EMP = { id:c.id, pin:c.pin, data:r };
+      return openEmp(r);
+    } catch(e) { msg('lMsg', e.message, 'bad'); }
+  }
+})();
+</script>
+</body>
+</html>
