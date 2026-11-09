@@ -90,6 +90,11 @@
   .install img{width:44px;height:44px;border-radius:10px;flex:0 0 auto}
   .install b{display:block}
   .install .hint{margin:2px 0 0}
+  .move{display:flex;gap:12px;align-items:center;border:2px solid #1d6fae}
+  .move img{width:44px;height:44px;border-radius:10px;flex:0 0 auto}
+  .move b{display:block}
+  .move .hint{margin:2px 0 0}
+  .move a.btn{background:#1d6fae;color:#fff;text-decoration:none;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -115,6 +120,14 @@
     </div>
     <button id="installBtn" class="btn sm hidden">تثبيت</button>
   </div>
+  <div class="card move hidden" data-move>
+    <img src="https://puritynectar-coder.github.io/naqaa-attendance/icon-192.png" alt="">
+    <div style="flex:1">
+      <b>التطبيق الجديد متاح</b>
+      <p class="hint">افتحه وثبّته على جوالك. جهازك ينتقل تلقائياً، وتدخل مرة واحدة بنفس الرقم والرمز.</p>
+    </div>
+    <a class="btn sm" data-move-link target="_top" href="https://puritynectar-coder.github.io/naqaa-attendance/">افتح التطبيق</a>
+  </div>
   <div style="text-align:center"><button class="link" onclick="show('vAdminLogin')">دخول المدير</button></div>
 </div>
 
@@ -122,7 +135,7 @@
 <div id="vEmp" class="wrap hidden">
   <header class="top">
     <span class="brand" data-company></span>
-    <button class="link" onclick="logout()">خروج</button>
+    <div><button id="eRefresh" class="btn ghost sm">تحديث</button> <button class="link" onclick="logout()">خروج</button></div>
   </header>
   <div class="card">
     <h1 id="eName"></h1>
@@ -137,6 +150,14 @@
     </div>
     <button id="ePunch" class="punch in">تسجيل حضور</button>
     <div id="eMsg"></div>
+  </div>
+  <div class="card move hidden" data-move>
+    <img src="https://puritynectar-coder.github.io/naqaa-attendance/icon-192.png" alt="">
+    <div style="flex:1">
+      <b>انتقل للتطبيق الجديد</b>
+      <p class="hint">ثبّته على جوالك. جهازك ينتقل تلقائياً، وتدخل مرة واحدة بنفس الرقم والرمز.</p>
+    </div>
+    <a class="btn sm" data-move-link target="_top" href="https://puritynectar-coder.github.io/naqaa-attendance/">افتح التطبيق</a>
   </div>
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
@@ -164,7 +185,7 @@
 <div id="vAdmin" class="wrap wide hidden">
   <header class="top">
     <div><span class="brand" data-company></span><h1>لوحة المدير</h1></div>
-    <button class="link" onclick="adminLogout()">خروج</button>
+    <div><button id="aRefresh" class="btn ghost sm">تحديث</button> <button class="link" onclick="adminLogout()">خروج</button></div>
   </header>
   <nav class="tabs">
     <button data-tab="tDay" class="on">الحضور اليومي</button>
@@ -215,7 +236,7 @@
         <button class="btn ghost" onclick="resetManual()">جديد</button>
       </div>
       <div id="mMsg"></div>
-      <p class="hint">إذا كان للموظف سجل في نفس التاريخ سيتم تعديله. اترك وقت الانصراف فارغاً لتسجيل الحضور فقط.</p>
+      <p class="hint">عند اختيار الموظف والتاريخ يظهر سجله الحالي تلقائياً. لتسجيل الانصراف فقط: أدخل وقت الانصراف واحفظ (يبقى وقت الحضور كما هو). اترك وقت الانصراف فارغاً لتسجيل الحضور فقط.</p>
     </div>
   </section>
 
@@ -436,6 +457,19 @@ async function loadMyMonth(){
   } catch(e) { $('eMonthBody').innerHTML = `<div class="msg bad">${esc(e.message)}</div>`; }
 }
 
+$('eRefresh').onclick = async () => {
+  if (!EMP) return;
+  busy('eRefresh', true);
+  try {
+    const r = await api('login', creds());
+    EMP.data = r;
+    renderToday(r.today);
+    msg('eMsg', '');
+    await loadMyMonth();
+  } catch(e) { msg('eMsg', e.message, 'bad'); }
+  busy('eRefresh', false);
+};
+
 function logout(){ EMP = null; store.del('emp'); $('lPin').value = ''; msg('eMsg',''); show('vLogin'); }
 
 setInterval(() => {
@@ -463,23 +497,52 @@ $('aPass').addEventListener('keydown', e => { if (e.key === 'Enter') $('aBtn').c
 
 function adminLogout(){ ADMIN = null; sess.del('adm'); $('aPass').value = ''; show('vLogin'); }
 
+function fillAdminLists(r){
+  const emp = $('mEmp').value, site = $('mSite').value;
+  $('mEmp').innerHTML = r.employees.map(e => `<option value="${esc(e.id)}">${esc(e.name)} (${esc(e.id)})${e.active ? '' : ' — غير نشط'}</option>`).join('');
+  $('mSite').innerHTML = '<option value="">الموقع الافتراضي للموظف</option>' + r.sites.map(s => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('');
+  if (emp && r.employees.some(e => e.id === emp)) $('mEmp').value = emp;
+  if (site) $('mSite').value = site;
+}
+
 function openAdmin(r){
   setCompany(r.company);
   $('dDate').value = r.date; $('mDate').value = r.date; $('rMonth').value = r.date.slice(0,7);
-  $('mEmp').innerHTML = r.employees.map(e => `<option value="${esc(e.id)}">${esc(e.name)} (${esc(e.id)})${e.active ? '' : ' — غير نشط'}</option>`).join('');
-  $('mSite').innerHTML = '<option value="">الموقع الافتراضي للموظف</option>' + r.sites.map(s => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('');
+  fillAdminLists(r);
   renderSites();
   show('vAdmin');
   tab('tDay');
 }
 
+let CUR_TAB = 'tDay';
 document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => tab(b.dataset.tab));
-function tab(id){
+function tab(id, skipLoad){
+  CUR_TAB = id;
   document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === id));
   ['tDay','tManual','tMonth','tSites','tDevices'].forEach(t => $(t).classList.toggle('hidden', t !== id));
+  if (skipLoad) return;
   if (id === 'tDay') loadDay();
+  if (id === 'tManual') loadManualRecord();
   if (id === 'tMonth') loadMonth();
   if (id === 'tDevices') loadDevices();
+}
+
+// زر التحديث: يعيد تحميل الموظفين والمواقع ثم بيانات التبويب الحالي
+$('aRefresh').onclick = async () => {
+  if (!ADMIN) return;
+  busy('aRefresh', true);
+  try {
+    const r = await api('adminLogin', adm());
+    ADMIN.data = r;
+    fillAdminLists(r);
+    renderSites();
+    tab(CUR_TAB);
+  } catch(e) { alertMsg(e.message); }
+  busy('aRefresh', false);
+};
+function alertMsg(t){
+  const box = { tDay: 'dBody', tManual: 'mMsg', tMonth: 'rBody', tSites: 'sMsg', tDevices: 'vMsg' }[CUR_TAB] || 'mMsg';
+  msg(box, t, 'bad');
 }
 
 const methodTag = m => m ? `<span class="tag ${m === 'يدوي' ? 'man' : ''}">${esc(m)}</span>` : '';
@@ -515,7 +578,25 @@ async function loadDay(){
 /* ---------- اليدوي ---------- */
 let EDITING = false;
 function editRecord(x){
-  tab('tManual');
+  tab('tManual', true);
+  fillManual(x);
+}
+// يعرض سجل الموظف المختار في التاريخ المختار (إن وُجد) لتكملة الانصراف أو التعديل
+async function loadManualRecord(){
+  const empId = $('mEmp').value, date = $('mDate').value;
+  if (!empId || !date) return;
+  msg('mMsg', 'جاري تحميل السجل…', 'info');
+  try {
+    const r = await api('adminDay', adm({ date: date }));
+    if ($('mEmp').value !== empId || $('mDate').value !== date) return;
+    const x = r.records.filter(y => y.empId === empId)[0];
+    fillManual(x || { empId: empId, date: date });
+    msg('mMsg', x ? ('السجل الحالي: حضور ' + (x.in || '—') + ' / انصراف ' + (x.out || '—')) : 'لا يوجد تسجيل لهذا الموظف في هذا التاريخ.', 'info');
+  } catch(e) { msg('mMsg', e.message, 'bad'); }
+}
+$('mEmp').onchange = loadManualRecord;
+$('mDate').onchange = loadManualRecord;
+function fillManual(x){
   $('mEmp').value = x.empId; $('mDate').value = x.date;
   $('mSite').value = x.siteId || '';
   $('mIn').value = x.in || ''; $('mOut').value = x.out || ''; $('mNote').value = x.note || '';
@@ -531,7 +612,7 @@ function resetManual(){
 function setNow(id){ $(id).value = riyadhNow().time; }
 
 $('mSave').onclick = async () => {
-  if (!$('mIn').value) return msg('mMsg', 'أدخل وقت الحضور', 'bad');
+  if (!$('mIn').value && !$('mOut').value) return msg('mMsg', 'أدخل وقت الحضور أو الانصراف', 'bad');
   busy('mSave', true);
   try {
     const r = await api('adminSave', adm({ empId: $('mEmp').value, date: $('mDate').value, siteId: $('mSite').value,
@@ -688,6 +769,21 @@ async function setSiteHere(i, btn){
     msg('sMsg', `تم تحديث موقع "${site.name}" (دقة ±${Math.round(c.accuracy)} م)`, 'ok');
   } catch(e) { msg('sMsg', e.message, 'bad'); btn.disabled = false; }
 }
+
+/* ===================== الانتقال للتطبيق الجديد ===================== */
+var NEW_APP_URL = "https://puritynectar-coder.github.io/naqaa-attendance/";
+function setupMoveCards() {
+  var host = String(location.hostname || "");
+  var inAppsScript = host.indexOf("googleusercontent.com") !== -1;
+  if (!inAppsScript) return;
+  var cards = document.querySelectorAll("[data-move]");
+  for (var i = 0; i < cards.length; i++) cards[i].classList.remove("hidden");
+  var links = document.querySelectorAll("[data-move-link]");
+  for (var j = 0; j < links.length; j++) {
+    links[j].addEventListener("click", function (ev) { ev.currentTarget.href = NEW_APP_URL + "#dev" + "=" + deviceId(); });
+  }
+}
+setupMoveCards();
 
 /* ===================== التطبيق (PWA) ===================== */
 // نقل معرّف الجهاز من الرابط القديم (#dev=...) حتى لا يحتاج الموظف إعادة تعيين
