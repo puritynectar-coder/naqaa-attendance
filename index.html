@@ -95,6 +95,11 @@
   .move b{display:block}
   .move .hint{margin:2px 0 0}
   .move a.btn{background:#1d6fae;color:#fff;text-decoration:none;white-space:nowrap}
+  .move{display:flex;gap:12px;align-items:center;border:2px solid #1d6fae}
+  .move img{width:44px;height:44px;border-radius:10px;flex:0 0 auto}
+  .move b{display:block}
+  .move .hint{margin:2px 0 0}
+  .move a.btn{background:#1d6fae;color:#fff;text-decoration:none;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -119,6 +124,14 @@
       <p id="installHint" class="hint">يفتح بضغطة واحدة من الشاشة الرئيسية.</p>
     </div>
     <button id="installBtn" class="btn sm hidden">تثبيت</button>
+  </div>
+  <div class="card move hidden" data-move>
+    <img src="https://puritynectar-coder.github.io/naqaa-attendance/icon-192.png" alt="">
+    <div style="flex:1">
+      <b>التطبيق الجديد متاح</b>
+      <p class="hint">افتحه وثبّته على جوالك. جهازك ينتقل تلقائياً، وتدخل مرة واحدة بنفس الرقم والرمز.</p>
+    </div>
+    <a class="btn sm" data-move-link target="_top" href="https://puritynectar-coder.github.io/naqaa-attendance/">افتح التطبيق</a>
   </div>
   <div class="card move hidden" data-move>
     <img src="https://puritynectar-coder.github.io/naqaa-attendance/icon-192.png" alt="">
@@ -599,7 +612,7 @@ $('mDate').onchange = loadManualRecord;
 function fillManual(x){
   $('mEmp').value = x.empId; $('mDate').value = x.date;
   $('mSite').value = x.siteId || '';
-  $('mIn').value = x.in || ''; $('mOut').value = x.out || ''; $('mNote').value = x.note || '';
+  $('mIn').value = hhmm(x.in); $('mOut').value = hhmm(x.out); $('mNote').value = x.note || '';
   EDITING = !!x.in;
   $('mTitle').textContent = EDITING ? 'تعديل سجل' : 'تسجيل حضور / انصراف يدوي';
   $('mDel').classList.toggle('hidden', !EDITING);
@@ -610,8 +623,15 @@ function resetManual(){
   EDITING = false; $('mTitle').textContent = 'تسجيل حضور / انصراف يدوي'; $('mDel').classList.add('hidden'); msg('mMsg','');
 }
 function setNow(id){ $(id).value = riyadhNow().time; }
+// خانة الوقت تقبل 09:04 فقط (وليس 9:04)
+function hhmm(t){
+  const m = String(t || '').match(/(\d{1,2}):(\d{2})/);
+  return m ? (m[1].length === 1 ? '0' + m[1] : m[1]) + ':' + m[2] : '';
+}
 
 $('mSave').onclick = async () => {
+  if ($('mIn').validity.badInput) return msg('mMsg', 'وقت الحضور غير مكتمل: أدخل الساعة والدقائق وص/م (أو اضغط "الآن").', 'bad');
+  if ($('mOut').validity.badInput) return msg('mMsg', 'وقت الانصراف غير مكتمل: أدخل الساعة والدقائق وص/م (أو اضغط "الآن").', 'bad');
   if (!$('mIn').value && !$('mOut').value) return msg('mMsg', 'أدخل وقت الحضور أو الانصراف', 'bad');
   busy('mSave', true);
   try {
