@@ -458,10 +458,13 @@ async function loadMyMonth(){
     const s = r.summary;
     let h = `<div class="kpis">
       <div class="stat"><b>${s.days}</b><span>أيام الحضور</span></div>
+      <div class="stat"><b${s.absent ? ' class="neg"' : ''}>${s.absent || 0}</b><span>أيام الغياب</span></div>
       <div class="stat"><b>${hm(s.worked)}</b><span>ساعات العمل</span></div>
       <div class="stat"><b>${hm(s.late)}</b><span>التأخير</span></div>
       <div class="stat"><b>${hm(s.ot)}</b><span>الإضافي</span></div>
       <div class="stat"><b>${signed(s.diff)}</b><span>الفرق</span></div></div>`;
+    const abs = s.absentDates || [];
+    if (abs.length) h += `<div class="msg bad" style="margin:0 0 12px">أيام الغياب (${abs.length}): ${abs.map(arDay).join('، ')}</div>`;
     if (!r.records.length) h += '<p class="hint">لا توجد سجلات في هذا الشهر.</p>';
     else h += `<div class="tbl"><table><thead><tr><th>اليوم</th><th>حضور</th><th>انصراف</th><th>تأخير</th><th>إضافي</th><th>الفرق</th></tr></thead><tbody>` +
       r.records.map(x => `<tr><td>${arDay(x.date)}</td><td>${esc(x.in)||'—'}</td><td>${esc(x.out)||'—'}</td><td>${hm(x.late)}</td><td>${hm(x.ot)}</td><td>${signed(x.diff)}</td></tr>`).join('') +
