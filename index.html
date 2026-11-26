@@ -264,7 +264,7 @@
         </div>
       </div>
       <div id="rBody" style="margin-top:14px"></div>
-      <p class="hint">الفرق = الإضافي − التأخير − الانصراف المبكر. اضغط على اسم الموظف لعرض تفاصيله.</p>
+      <p class="hint">الفرق = الإضافي − التأخير − الانصراف المبكر. أيام الغياب = أيام العمل (بدون أيام الراحة) بدون تسجيل حضور، حتى أمس. اضغط على اسم الموظف لعرض تفاصيله وتواريخ غيابه.</p>
     </div>
     <div id="rDetailCard" class="card hidden">
       <h2 id="rDetailTitle"></h2>
@@ -662,12 +662,12 @@ async function loadMonth(){
   try {
     const r = await api('adminMonth', adm({ month: $('rMonth').value }));
     MONTH = r;
-    const t = r.summary.reduce((a,s) => { ['days','worked','late','early','ot','diff'].forEach(k => a[k] += s[k]); return a; }, {days:0,worked:0,late:0,early:0,ot:0,diff:0});
+    const t = r.summary.reduce((a,s) => { ['days','absent','worked','late','early','ot','diff'].forEach(k => a[k] += (s[k] || 0)); return a; }, {days:0,absent:0,worked:0,late:0,early:0,ot:0,diff:0});
     const rows = r.summary.map((s,i) => `<tr class="click" data-i="${i}">
-      <td>${esc(s.name)}</td><td>${s.days}</td><td>${hm(s.worked)}</td><td>${hm(s.late)} <span class="tag">${s.lateDays} يوم</span></td>
+      <td>${esc(s.name)}</td><td>${s.days}</td><td>${s.absent ? `<span class="neg">${s.absent}</span>` : '0'}</td><td>${hm(s.worked)}</td><td>${hm(s.late)} <span class="tag">${s.lateDays} يوم</span></td>
       <td>${hm(s.early)}</td><td>${hm(s.ot)}</td><td>${signed(s.diff)}</td><td>${s.incomplete ? `<span class="tag man">${s.incomplete}</span>` : '—'}</td></tr>`).join('');
-    $('rBody').innerHTML = `<div class="tbl"><table><thead><tr><th>الموظف</th><th>أيام الحضور</th><th>ساعات العمل</th><th>التأخير</th><th>انصراف مبكر</th><th>الإضافي</th><th>الفرق</th><th>بدون انصراف</th></tr></thead>
-      <tbody>${rows}<tr><td><b>الإجمالي</b></td><td><b>${t.days}</b></td><td><b>${hm(t.worked)}</b></td><td><b>${hm(t.late)}</b></td><td><b>${hm(t.early)}</b></td><td><b>${hm(t.ot)}</b></td><td><b>${signed(t.diff)}</b></td><td></td></tr></tbody></table></div>`;
+    $('rBody').innerHTML = `<div class="tbl"><table><thead><tr><th>الموظف</th><th>أيام الحضور</th><th>أيام الغياب</th><th>ساعات العمل</th><th>التأخير</th><th>انصراف مبكر</th><th>الإضافي</th><th>الفرق</th><th>بدون انصراف</th></tr></thead>
+      <tbody>${rows}<tr><td><b>الإجمالي</b></td><td><b>${t.days}</b></td><td><b>${t.absent}</b></td><td><b>${hm(t.worked)}</b></td><td><b>${hm(t.late)}</b></td><td><b>${hm(t.early)}</b></td><td><b>${hm(t.ot)}</b></td><td><b>${signed(t.diff)}</b></td><td></td></tr></tbody></table></div>`;
     $('rBody').querySelectorAll('tr.click').forEach(tr => tr.onclick = () => monthDetail(r.summary[+tr.dataset.i]));
   } catch(e) { $('rBody').innerHTML = `<div class="msg bad">${esc(e.message)}</div>`; }
 }
@@ -675,10 +675,14 @@ async function loadMonth(){
 function monthDetail(s){
   const recs = MONTH.records.filter(x => x.empId === s.id);
   $('rDetailTitle').textContent = `${s.name} — ${MONTH.month}`;
-  $('rDetail').innerHTML = recs.length ? `<div class="tbl"><table><thead><tr><th>اليوم</th><th>الموقع</th><th>حضور</th><th>انصراف</th><th>تأخير</th><th>مبكر</th><th>مدة العمل</th><th>إضافي</th><th>الفرق</th><th>ملاحظة</th></tr></thead><tbody>` +
+  const abs = (s.absentDates || []);
+  const absHtml = abs.length
+    ? `<div class="msg bad" style="margin:0 0 12px">أيام الغياب (${abs.length}): ${abs.map(arDay).join('، ')}</div>`
+    : '<p class="hint" style="margin:0 0 12px">لا توجد أيام غياب.</p>';
+  $('rDetail').innerHTML = absHtml + (recs.length ? `<div class="tbl"><table><thead><tr><th>اليوم</th><th>الموقع</th><th>حضور</th><th>انصراف</th><th>تأخير</th><th>مبكر</th><th>مدة العمل</th><th>إضافي</th><th>الفرق</th><th>ملاحظة</th></tr></thead><tbody>` +
     recs.map((x,i) => `<tr class="click" data-i="${i}"><td>${arDay(x.date)}</td><td>${esc(x.siteName)}</td><td>${esc(x.in)||'—'} ${methodTag(x.inMethod)}</td><td>${esc(x.out)||'—'} ${methodTag(x.outMethod)}</td>
       <td>${hm(x.late)}</td><td>${hm(x.early)}</td><td>${hm(x.worked)}</td><td>${hm(x.ot)}</td><td>${signed(x.diff)}</td><td>${esc(x.note)}</td></tr>`).join('') + '</tbody></table></div>'
-    : '<p class="hint">لا توجد سجلات.</p>';
+    : '<p class="hint">لا توجد سجلات.</p>');
   $('rDetail').querySelectorAll('tr.click').forEach(tr => tr.onclick = () => editRecord(recs[+tr.dataset.i]));
   $('rDetailCard').classList.remove('hidden');
   $('rDetailCard').scrollIntoView({ behavior:'smooth' });
@@ -697,12 +701,12 @@ function loadXlsx(){
 
 function exportRows(){
   const dash = v => (v === null || v === undefined || v === '') ? '' : v;
-  const t = MONTH.summary.reduce((a,s) => { ['days','lateDays','worked','late','early','ot','diff','incomplete'].forEach(k => a[k] += s[k]); return a; },
-    {days:0,lateDays:0,worked:0,late:0,early:0,ot:0,diff:0,incomplete:0});
+  const t = MONTH.summary.reduce((a,s) => { ['days','absent','lateDays','worked','late','early','ot','diff','incomplete'].forEach(k => a[k] += (s[k] || 0)); return a; },
+    {days:0,absent:0,lateDays:0,worked:0,late:0,early:0,ot:0,diff:0,incomplete:0});
   const summary = [
-    ['الرقم الوظيفي','الموظف','أيام الحضور','أيام التأخير','ساعات العمل','التأخير','الانصراف المبكر','الإضافي','الفرق','أيام بدون انصراف']
-  ].concat(MONTH.summary.map(s => [s.id, s.name, s.days, s.lateDays, hm(s.worked), hm(s.late), hm(s.early), hm(s.ot), hm(s.diff), s.incomplete]))
-   .concat([['', 'الإجمالي', t.days, t.lateDays, hm(t.worked), hm(t.late), hm(t.early), hm(t.ot), hm(t.diff), t.incomplete]]);
+    ['الرقم الوظيفي','الموظف','أيام الحضور','أيام الغياب','أيام التأخير','ساعات العمل','التأخير','الانصراف المبكر','الإضافي','الفرق','أيام بدون انصراف','تواريخ الغياب']
+  ].concat(MONTH.summary.map(s => [s.id, s.name, s.days, s.absent || 0, s.lateDays, hm(s.worked), hm(s.late), hm(s.early), hm(s.ot), hm(s.diff), s.incomplete, (s.absentDates || []).join('، ')]))
+   .concat([['', 'الإجمالي', t.days, t.absent, t.lateDays, hm(t.worked), hm(t.late), hm(t.early), hm(t.ot), hm(t.diff), t.incomplete, '']]);
   const details = [
     ['التاريخ','الرقم الوظيفي','الموظف','الموقع','الحضور','الانصراف','التأخير','الانصراف المبكر','مدة العمل','الإضافي','الفرق','طريقة الحضور','طريقة الانصراف','ملاحظات']
   ].concat(MONTH.records.map(x => [x.date, x.empId, x.name, x.siteName, dash(x.in), dash(x.out),
@@ -726,7 +730,7 @@ async function exportCsv(){
     const X = await loadXlsx();
     const wb = X.utils.book_new();
     const mk = (rows, widths) => { const ws = X.utils.aoa_to_sheet(rows); ws['!cols'] = widths.map(w => ({ wch: w })); return ws; };
-    X.utils.book_append_sheet(wb, mk(summary, [12,24,11,11,11,10,14,10,10,15]), 'الملخص');
+    X.utils.book_append_sheet(wb, mk(summary, [12,24,11,11,11,11,10,14,10,10,15,40]), 'الملخص');
     X.utils.book_append_sheet(wb, mk(details, [12,12,24,14,9,9,9,14,10,9,9,12,12,24]), 'التفاصيل اليومية');
     wb.Workbook = { Views: [{ RTL: true }] };
     const out = X.write(wb, { bookType: 'xlsx', type: 'array' });
